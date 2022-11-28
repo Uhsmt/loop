@@ -120,7 +120,7 @@ export class Butterfly extends PIXI.Container
     private clickEvent()
     {
     // TODO テスト用。完了後は消す
-        console.log(this);
+        // console.log(this);
     }
 
     private createSprite()

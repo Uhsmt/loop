@@ -54,14 +54,15 @@ window.addEventListener('load', () =>
     loading.endFill();
     app.stage.addChild(loading);
 
-    const loadingMessage = new Message('loading', 20, false, 30);
+    const loadingMessage = new Message('loading', 20);
 
     loadingMessage.x = app.screen.width / 2;
     loadingMessage.y = (app.screen.height / 2) + 60;
     loading.addChild(loadingMessage);
+    loadingMessage.show(false, 30);
 
     app.loader.add([
-        { url: 'https://fonts.googleapis.com/css2?family=Amatic+SC&family=Yomogi&family=Marvel&display=swap' },
+        { url: 'https://fonts.googleapis.com/css2?family=Amatic+SC&family=Yomogi&family=Marvel&family=Neucha&display=display=swap' },
         { name: 'butterfly_large', url: './images/butterfly_large.png' },
         { name: 'butterfly_medium', url: './images/butterfly_medium.png' },
         { name: 'butterfly_small', url: './images/butterfly_small.png' },
@@ -77,7 +78,8 @@ window.addEventListener('load', () =>
         { name: 'leaf3', url: './images/leaf3.png' },
         { name: 'leaf4', url: './images/leaf4.png' },
         { name: 'leaf5', url: './images/leaf5.png' },
-        { name: 'leaf6', url: './images/leaf6.png' }
+        { name: 'leaf6', url: './images/leaf6.png' },
+        { name: 'sticky', url: './images/sticky.png' }
     ]).load(() =>
     {
         PIXI.TextMetrics.BASELINE_SYMBOL += 'あ｜';
@@ -95,6 +97,7 @@ window.addEventListener('load', () =>
 
         new MenuStage(app, stage1).initialize();
     });
+
     app.loader.onProgress.add(() =>
     {
         loading.beginFill(0x00B7FF);

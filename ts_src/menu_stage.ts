@@ -38,11 +38,12 @@ class MenuButton extends PIXI.Container
         this.on('pointertap', () =>
         {
             console.log(this.getBounds());
-            const msg = new Message('Don\'t click. Please loop!', 20, true, 50);
+            const msg = new Message('Don\'t click. Please loop!', 20);
 
             msg.x = (app.screen.width / 2);
             msg.y = app.screen.height / 2;
             app.stage.addChild(msg);
+            msg.show(true, 50);
         });
         this.visible = false;
     }
@@ -115,14 +116,17 @@ export class MenuStage extends Stage
         title.anchor.set(0.5);
 
         this.BACKGROUND_CONTAINER.addChild(title);
-        const startButton = new MenuButton('start', this.app, () =>
+        const startButton = new MenuButton('start', this.app, async () =>
         {
-            console.log('start!');
             // TODO MENUstageのdestroy
             this.BACKGROUND_CONTAINER.removeChildren();
             this.GAME_CONTAINER.removeChildren();
             stage1.initialize();
-            stage1.start();
+            await stage1.start().then((res) =>
+            {
+                stage1.showResult(res);
+                console.log(`stage1.done:result=${res}`);
+            });
         });
 
         startButton.x = (app.screen.width / 3) - (startButton.getBounds().width / 2);
@@ -133,11 +137,12 @@ export class MenuStage extends Stage
         {
             // TODO help
             console.log('help');
-            const msg = new Message('sorry,in preparation', 20, true, 50);
+            const msg = new Message('sorry,in preparation', 20);
 
             msg.x = (app.screen.width / 2);
             msg.y = app.screen.height / 2;
             app.stage.addChild(msg);
+            msg.show(true, 50);
         });
 
         helpButton.x = (app.screen.width * 2 / 3) - (helpButton.getBounds().width / 2);
@@ -220,7 +225,6 @@ export class MenuStage extends Stage
         {
             loopedButtons[0].selected();
         }
-        console.log(loopedButtons);
         this.GAME_CONTAINER.addChild(loopArea);
         loopArea.delete();
     }

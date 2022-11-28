@@ -1,3 +1,4 @@
+import { resolve } from 'path';
 import * as PIXI from 'pixi.js';
 
 export class Message extends PIXI.Text
@@ -6,13 +7,12 @@ export class Message extends PIXI.Text
     ticker = new PIXI.Ticker();
     keepFrame = 30;
 
-    constructor(message:string, size:number, autohide:boolean, keepFrame:number)
+    constructor(message:string, size:number)
     {
         super(message);
         this.message = message;
-        this.keepFrame = keepFrame;
         this.style = new PIXI.TextStyle({
-            fontFamily: this.isJapanese() ? 'Yomogi' : 'Marvel',
+            fontFamily: this.isJapanese() ? 'Yomogi' : 'Neucha',
             fontSize: (this.isJapanese() ? 1 : 1.2) * size,
             fontWeight: 'bold',
             fill: ['#111111'],
@@ -20,33 +20,45 @@ export class Message extends PIXI.Text
             wordWrapWidth: 440,
             lineJoin: 'round',
             align: 'center',
+            whiteSpace: 'pre-line',
         });
         this.anchor.set(0.5);
+        this.alpha = 0;
 
+        // console.log(`${this.message}:${this.isJapanese()}:${this.style.fontFamily}`);
+    }
+    async show(autohide:boolean, keepFrame:number)
+    {
+        this.alpha = 1;
+        this.keepFrame = keepFrame;
         this.ticker.start();
         if (autohide)
         {
-            this.delete();
+            return this.delete();
         }
-        console.log(`${this.message}:${this.isJapanese()}:${this.style.fontFamily}`);
     }
-    delete()
+
+    async delete()
     {
         let frame = 0;
 
-        this.ticker.add(() =>
+        return new Promise<void>((resolve) =>
         {
-            frame += 1;
-            if (frame <= this.keepFrame)
+            this.ticker.add(() =>
             {
-                return;
-            }
-            this.alpha -= 0.02;
-            if (this.alpha <= 0.1)
-            {
-                this.ticker.destroy();
-                this.destroy();
-            }
+                frame += 1;
+                if (frame <= this.keepFrame)
+                {
+                    return;
+                }
+                this.alpha -= 0.02;
+                if (this.alpha <= 0.1)
+                {
+                    this.ticker.destroy();
+                    this.destroy();
+                    resolve();
+                }
+            });
         });
     }
     isJapanese()

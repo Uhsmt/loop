@@ -5,6 +5,8 @@ import { Message } from './message';
 import { LoopArea } from './rope';
 import * as Utility from './utility';
 import { myConsts, ButterflySizeType } from './const';
+import { clear } from 'console';
+import { resolve } from 'path';
 
 class Sun extends PIXI.Container
 {
@@ -50,6 +52,7 @@ export class GameStage extends Stage
     isDrawable = true;
     isPause = false;
     isBonus = false;
+    isFinish = false;
     multipleProbability = 30;
     score = 0;
     capturedCount = 0;
@@ -75,7 +78,7 @@ export class GameStage extends Stage
         this.app = app;
 
         // underdisp
-        const scoreProgress = new Message(`0 / ${this.clearCondition}`, 25, false, 30);
+        const scoreProgress = new Message(`0 / ${this.clearCondition}`, 25);
 
         scoreProgress.name = 'scoreProgress';
         scoreProgress.x = this.app.screen.width / 2;
@@ -83,6 +86,7 @@ export class GameStage extends Stage
         this.MESSAGE_CONTAINER.addChild(scoreProgress);
         scoreProgress.alpha = 0;
         this.scoreProgress = scoreProgress;
+        // scoreProgress.show(false,30)
     }
 
     initialize()
@@ -93,25 +97,88 @@ export class GameStage extends Stage
 
         backgroundSprite.name = 'backgroundSprite';
         backgroundSprite.x = -400;
-        backgroundSprite.y = -200 - this.app.screen.height;
+        backgroundSprite.y = -this.app.screen.height + 200;
         this.BACKGROUND_CONTAINER.addChild(backgroundSprite);
     }
 
-    start()
+    async start()
     {
-        console.log('start');
-        // Rope
-        this.setRope(40);
-        // this.createButterflies();
+        return new Promise<boolean>(async (resolve) =>
+        {
+            console.log('stage start');
+            this.setRope(40);
 
-        const msgObj = new Message(`LEVEL${this.level}`, 30, false, 30);
+            const levelMsg = new Message(`LEVEL${this.level}`, 30);
 
-        msgObj.x = this.app.view.width / 2;
-        msgObj.y = this.app.view.height / 3;
+            levelMsg.x = this.app.view.width / 2;
+            levelMsg.y = this.app.view.height / 3;
 
-        this.MESSAGE_CONTAINER.addChild(msgObj);
+            const missionMsg = new Message(`mission: ${this.clearCondition} buterflies`, 25);
 
-        // this.play();
+            missionMsg.x = this.app.view.width / 2;
+            missionMsg.y = this.app.view.height / 2;
+
+            this.MESSAGE_CONTAINER.addChild(levelMsg);
+            this.MESSAGE_CONTAINER.addChild(missionMsg);
+
+            await Promise.all([
+                levelMsg.show(true, 80),
+                missionMsg.show(true, 80)
+            ]);
+
+            const gameResult = await this.play();
+
+            resolve(gameResult);
+        });
+    }
+
+    showResult(gameResult:boolean)
+    {
+        const stickySprite = new PIXI.Sprite(this.app.loader.resources.sticky.texture);
+
+        stickySprite.name = 'stickySprite';
+        stickySprite.scale.set(0.2);
+        stickySprite.x = this.app.screen.width / 2;
+        stickySprite.y = this.app.screen.height / 2;
+        stickySprite.anchor.set(0.5);
+
+        this.BACKGROUND_CONTAINER.addChild(stickySprite);
+
+        let bonusCount = this.capturedCount - this.clearCondition;
+
+        if (bonusCount < 0)
+        {
+            bonusCount = 0;
+        }
+        const totalScore = this.score + (bonusCount * 100);
+
+        const topMsg =  new Message(gameResult ? `level ${this.level} clear!!` : 'game over', 30);
+        const conditionMsg = new Message(`I need ${this.clearCondition} butterflies.`, 20);
+        const countMsg = new Message(`You caught ${this.capturedCount} butterflies.`, 20);
+        const lineMsg = new Message('----', 30);
+        const baseScoreMsg = new Message(`base score : ${this.score}`, 20);
+        const bonusMsg = new Message(`bonus score : ${bonusCount} × 100 = ${bonusCount * 100}`, 20);
+        const totalScoreMsg = new Message(`total score : ${totalScore}`, 30);
+
+        const msgs = [topMsg, conditionMsg, countMsg, lineMsg, baseScoreMsg, bonusMsg, totalScoreMsg];
+
+        msgs.forEach((msg, index) =>
+        {
+            this.MESSAGE_CONTAINER.addChild(msg);
+            msg.x = this.app.screen.width * 0.5;
+            msg.y = 100 + (this.app.screen.height * 0.1 * index);
+            if (msg === lineMsg)
+            {
+                msg.show(false, 30);
+            }
+            else
+            {
+                setTimeout(() =>
+                {
+                    msg.show(false, 30);
+                }, 300 * index);
+            }
+        });
     }
 
     gameTest()
@@ -147,67 +214,88 @@ export class GameStage extends Stage
 
     finish()
     {
+        console.log('finish');
         const butterflies = <Butterfly[]> this.GAME_CONTAINER.children;
 
         for (const butterfly of butterflies)
         {
             butterfly.delete();
         }
-        this.scoreProgress.delete();
+        // this.scoreProgress.delete(); TODO deleteできえない tickerが破壊された？
+        this.scoreProgress.visible = false;
+        this.isFinish = true;
         console.log('ゲーム終了！');
     }
 
-    private play()
+    private async play()
     {
-        console.log('play');
-        this.scoreProgress.alpha = 1;
-        // click and freeze
-        this.app.renderer.view.addEventListener('pointerup', () =>
+        return new Promise<boolean>(async (resolve) =>
         {
-            this.stageClick();
+            console.log('play');
+            this.createButterflies();
+            this.scoreProgress.alpha = 1;
+            // click and freeze
+            this.app.renderer.view.addEventListener('pointerup', () =>
+            {
+                this.stageClick();
+            });
+
+            const sun = new Sun();
+
+            sun.y = this.app.screen.height;
+            this.BACKGROUND_CONTAINER.addChild(sun);
+            let totalFrame = 0;
+            let isBlink = false;
+
+            const ticker = new PIXI.Ticker();
+
+            // move sun and judge clear
+            ticker.add(async (delta) =>
+            {
+                if (this.isPause)
+                {
+                    return;
+                }
+                else if (this.capturedCount >= this.clearCondition)
+                {
+                    this.finish();
+                    ticker.destroy();
+                    await this.dispMessage('\n\nおわり！');
+                    setTimeout(() => { resolve(true); }, 500);
+                }
+
+                totalFrame += delta;
+                const ms = totalFrame / 60;
+                const degree = 180 * (totalFrame / (this.gameTime * 60));
+                const radian = degree * (Math.PI / 180);
+
+                sun.x = this.app.screen.width * (totalFrame / (this.gameTime * 60));
+                sun.y = this.app.screen.height - (Math.sin(radian) * this.app.screen.height * 0.5);
+
+                if (!isBlink && ms >= this.gameTime - 10)
+                {
+                    sun.blink();
+                    isBlink = true;
+                }
+                if (ms >= this.gameTime)
+                {
+                    this.finish();
+                    ticker.destroy();
+                    await this.dispMessage('\n時間ぎれ！');
+                    setTimeout(() => { resolve(false); }, 1000);
+                }
+            });
+            ticker.start();
         });
-
-        // sun moving and gameTimer
-        const sun = new Sun();
-
-        sun.y = this.app.screen.height;
-        this.BACKGROUND_CONTAINER.addChild(sun);
-        let totalFrame = 0;
-        let isBlink = false;
-
-        const ticker = new PIXI.Ticker();
-
-        ticker.add((delta) =>
-        {
-            if (this.isPause || this.capturedCount >= this.clearCondition)
-            {
-                return;
-            }
-            totalFrame += delta;
-            const degree = 180 * (totalFrame / (this.gameTime * 60));
-            const radian = degree * (Math.PI / 180);
-
-            sun.x = this.app.screen.width * (totalFrame / (this.gameTime * 60));
-            sun.y = this.app.screen.height - (Math.sin(radian) * this.app.screen.height * 0.5);
-            const ms = totalFrame / 60;
-
-            if (!isBlink && ms >= this.gameTime - 10)
-            {
-                sun.blink();
-                isBlink = true;
-            }
-            if (ms >= this.gameTime)
-            {
-                this.finish();
-                this.dispMessage('\n時間ぎれ！');
-                ticker.destroy();
-            }
-        });
-        ticker.start();
     }
 
     private stageClick()
     {
+        if (this.isFinish)
+        {
+            return;
+        }
+
         if (this.isPause)
         {
             this.freeze(false, 'pause');
@@ -282,13 +370,14 @@ export class GameStage extends Stage
         }
         if (on)
         {
-            const msgObj = new Message(message, 30, false, 30);
+            const msgObj = new Message(message, 30);
 
             msgObj.name = 'freezeMsg';
             msgObj.x = this.app.view.width / 2;
             msgObj.y = this.app.view.height / 2;
 
             this.MESSAGE_CONTAINER.addChild(msgObj);
+            msgObj.show(false, 30);
         }
         else
         {
@@ -350,22 +439,10 @@ export class GameStage extends Stage
                 this.score += calcrateResult.score;
                 const message = `${calcrateResult.formula}`;
 
-                if (this.capturedCount >= this.clearCondition)
-                {
-                    // message += '\n\nおわり！';
-                    this.dispMessage('\n\nおわり！');
-                }
-
                 this.dispMessage(message);
                 for (const cb of captureButterflies)
                 {
                     cb.delete();
-                }
-                if (this.capturedCount >= this.clearCondition)
-                {
-                    this.finish();
-
-                    return;
                 }
             }
             else
@@ -395,14 +472,21 @@ export class GameStage extends Stage
         });
     }
 
-    private dispMessage(message:string)
+    private async dispMessage(message:string)
     {
-        const msgObj = new Message(message, 30, true, 30);
+        return new Promise<void>((resolve) =>
+        {
+            const msgObj = new Message(message, 30);
 
-        msgObj.x = this.app.view.width / 2;
-        msgObj.y = this.app.view.height / 2;
+            msgObj.x = this.app.view.width / 2;
+            msgObj.y = this.app.view.height / 2;
 
-        this.MESSAGE_CONTAINER.addChild(msgObj);
+            this.MESSAGE_CONTAINER.addChild(msgObj);
+            msgObj.show(true, 30).then((res) =>
+            {
+                resolve();
+            });
+        });
     }
 
     private updateCount()
