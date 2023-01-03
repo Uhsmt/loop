@@ -14,30 +14,14 @@ const app = new PIXI.Application({
     antialias: true
 });
 
-// TODO 呼び出し時の引数書き方optionに変えたい。。
-// const option1 = {
-//     level:1,
-//     butterflyNum:12,
-//     colorNum:3,
-//     sizeType:ButterflySizeType.LARGE,
-//     clearCondition:15,
-//     app:PIXI.Application
-// };
-// const stage1 = new GameStage(
-//     app,option1
-// );
-
-const stage1 = new GameStage(
-    1,
-    12,
-    3,
-    ButterflySizeType.LARGE,
-    15,
-    app
-);
-
-stage1.haveSwitch = true;
-stage1.haveMultiple = true;
+const stage1 = new GameStage({
+    level: 1,
+    butterflyNum: 8,
+    colorNum: 2,
+    sizeType: ButterflySizeType.LARGE,
+    clearCondition: 10,
+    app,
+});
 
 window.addEventListener('load', () =>
 {

@@ -122,9 +122,9 @@ export class MenuStage extends Stage
             this.BACKGROUND_CONTAINER.removeChildren();
             this.GAME_CONTAINER.removeChildren();
             stage1.initialize();
-            await stage1.start().then((res) =>
+            stage1.start().then((res) =>
             {
-                stage1.showResult(res);
+                stage1.dispResult(res);
                 console.log(`stage1.done:result=${res}`);
             });
         });

@@ -5,8 +5,6 @@ import { Message } from './message';
 import { LoopArea } from './rope';
 import * as Utility from './utility';
 import { myConsts, ButterflySizeType } from './const';
-import { clear } from 'console';
-import { resolve } from 'path';
 
 class Sun extends PIXI.Container
 {
@@ -39,6 +37,16 @@ class Sun extends PIXI.Container
         this.addChild(blinkSprite);
     }
 }
+type GameStageOptions = {
+    level:number,
+    butterflyNum:number,
+    colorNum:number,
+    sizeType:string,
+    clearCondition:number,
+    haveSwitch?:boolean,
+    haveMultiple?:boolean,
+    app:PIXI.Application
+};
 
 export class GameStage extends Stage
 {
@@ -47,8 +55,8 @@ export class GameStage extends Stage
     sizeType:string;
     butterflyNum:number;
     clearCondition:number;
-    haveSwitch = false;
-    haveMultiple = false;
+    haveSwitch:boolean;
+    haveMultiple:boolean;
     isDrawable = true;
     isPause = false;
     isBonus = false;
@@ -61,13 +69,16 @@ export class GameStage extends Stage
     scoreProgress: Message;
     readonly gameTime = 60;
 
-    constructor(level:number,
-        butterflyNum:number,
-        colorNum:number,
-        sizeType:string,
-        clearCondition:number,
-        app:PIXI.Application// TODO appはグローバルにできないかな
-    )
+    constructor({ 
+        level,
+        butterflyNum,
+        colorNum,
+        sizeType,
+        clearCondition,
+        haveSwitch = false,
+        haveMultiple = false,
+        app,// TODO appはグローバルにできないかな
+        }:GameStageOptions)
     {
         super(app);
         this.level = level;
@@ -75,6 +86,8 @@ export class GameStage extends Stage
         this.butterflyNum = butterflyNum;
         this.clearCondition = clearCondition;
         this.colors = Utility.chooseAtRandom(myConsts.COLOR_LIST, colorNum);
+        this.haveSwitch = haveSwitch;
+        this.haveMultiple = haveMultiple;
         this.app = app;
 
         // underdisp
@@ -113,7 +126,7 @@ export class GameStage extends Stage
             levelMsg.x = this.app.view.width / 2;
             levelMsg.y = this.app.view.height / 3;
 
-            const missionMsg = new Message(`mission: ${this.clearCondition} buterflies`, 25);
+            const missionMsg = new Message(`mission:  ${this.clearCondition}  buterflies`, 25);
 
             missionMsg.x = this.app.view.width / 2;
             missionMsg.y = this.app.view.height / 2;
@@ -132,7 +145,7 @@ export class GameStage extends Stage
         });
     }
 
-    showResult(gameResult:boolean)
+    dispResult(gameResult:boolean)
     {
         const stickySprite = new PIXI.Sprite(this.app.loader.resources.sticky.texture);
 
@@ -183,7 +196,7 @@ export class GameStage extends Stage
 
     gameTest()
     {
-        this.createButterflies();
+        this.createButterflies(this.butterflyNum);
     }
 
     testConsole()
@@ -232,7 +245,7 @@ export class GameStage extends Stage
         return new Promise<boolean>(async (resolve) =>
         {
             console.log('play');
-            this.createButterflies();
+            this.createButterflies(this.butterflyNum);
             this.scoreProgress.alpha = 1;
             // click and freeze
             this.app.renderer.view.addEventListener('pointerup', () =>
@@ -281,7 +294,7 @@ export class GameStage extends Stage
                 {
                     this.finish();
                     ticker.destroy();
-                    await this.dispMessage('\n時間ぎれ！');
+                    await this.dispMessage('\nTime up!');
                     setTimeout(() => { resolve(false); }, 1000);
                 }
             });
@@ -313,29 +326,25 @@ export class GameStage extends Stage
         this.deleteRoop();
     }
 
-    private createButterflies()
+    private createButterflies(num:number)
     {
-        for (let i = 0; i < this.butterflyNum; i++)
+        for (let i = 0; i < num; i++)
         {
-            this.createButterfly();
-        }
-    }
+            // this.createButterfly();
+            const size = this.getButterflySize();
+            const multiplicationRate = this.getMultipleRandom();
+            const randomTwoColors = Utility.chooseAtRandom(this.colors, 2);
+            const mainColor = randomTwoColors[0];
+            const subColor = (this.haveSwitch) ? randomTwoColors[1] : mainColor;
+            const butterfly = new Butterfly(size, mainColor, subColor, multiplicationRate, this.app);
 
-    private createButterfly()
-    {
-        const size = this.getButterflySize();
-        const multiplicationRate = this.getMultipleRandom();
-        const randomTwoColors = Utility.chooseAtRandom(this.colors, 2);
-        const mainColor = randomTwoColors[0];
-        const subColor = (this.haveSwitch) ? randomTwoColors[1] : mainColor;
-        const butterfly = new Butterfly(size, mainColor, subColor, multiplicationRate, this.app);
-
-        this.GAME_CONTAINER.addChild(butterfly);
-        butterfly.show();
-        butterfly.fly(this.ROPE_CONTAINER);
-        if (this.isPause)
-        {
-            butterfly.stop();
+            this.GAME_CONTAINER.addChild(butterfly);
+            butterfly.show();
+            butterfly.fly(this.ROPE_CONTAINER);
+            if (this.isPause)
+            {
+                butterfly.stop();
+            }
         }
     }
 
@@ -463,11 +472,7 @@ export class GameStage extends Stage
             {
                 this.isDrawable = true;
             }
-            for (let i = 0; i < caputredNum; i++)
-            {
-                this.createButterfly();
-            }
-
+            this.createButterflies(caputredNum);
             console.log(`SCORE:${this.score}`);
         });
     }

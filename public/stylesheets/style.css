@@ -13,3 +13,6 @@ a {
   height: 500px;
   cursor: url(../images/pencil.png) 0 18,auto;
 }
+.icon-font{
+  font-size:20px;
+}
