@@ -5,6 +5,8 @@ import { Butterfly } from './butterfly';
 import { myConsts, ButterflySizeType } from './const';
 import { GameStage } from './game_stage';
 import { Message } from './message';
+import { Resource } from 'pixi.js';
+import { resolve } from 'path';
 
 class MenuButton extends PIXI.Container
 {
@@ -22,6 +24,7 @@ class MenuButton extends PIXI.Container
         const textObj = new PIXI.Text(text, {
             fontFamily: 'Amatic SC',
             fontSize: 50,
+            
             fontWeight: 'bold',
             fill: ['#432c39'],
             lineJoin: 'round',
@@ -98,12 +101,52 @@ class MenuButton extends PIXI.Container
     }
 }
 
+class Leaf extends PIXI.Sprite{
+    constructor(texture:PIXI.Texture<Resource> | undefined){
+        super(texture);
+        this.anchor.y = 1;
+    }
+
+    async bound(isLeft:boolean){
+        let radius = 0;
+        const boundCount = 2;
+
+        return new Promise<void>((resolve) =>{
+            const baseAngle = this.angle;
+            const angleRange = 20;
+            const ticker = new PIXI.Ticker();
+            let boundedCount = 0;
+            ticker.add(()=>{
+                radius += 6 * (boundedCount + 1); //speed
+                const addAngle = Math.sin(Math.PI/180*radius) * angleRange / (boundedCount+1);
+                if(isLeft){
+                    this.angle =  baseAngle - addAngle;
+                }else{
+                    this.angle =  baseAngle + addAngle;
+                }
+                
+                if(radius > 180){
+                    boundedCount += 1;
+                    radius = 0;
+                }
+                if (boundCount == boundedCount){
+                    ticker.stop();
+                    resolve();
+                }
+            });
+            ticker.start();
+        });
+    }
+}
+
+
+
 export class MenuStage extends Stage
 {
     constructor(app:PIXI.Application, stage1:GameStage)
     {
         super(app);
-        this.setBackGround();
+        this.showLeaves();
         const title = new PIXI.Text('LOOP', {
             fontFamily: 'Amatic SC',
             fontSize: 100,
@@ -119,8 +162,7 @@ export class MenuStage extends Stage
         const startButton = new MenuButton('start', this.app, async () =>
         {
             // TODO MENUstageのdestroy
-            this.BACKGROUND_CONTAINER.removeChildren();
-            this.GAME_CONTAINER.removeChildren();
+            await this.removeMenuStage();
             stage1.initialize();
             stage1.start().then((res) =>
             {
@@ -158,48 +200,61 @@ export class MenuStage extends Stage
         super.initialize();
         this.setRope(50);
     }
-    private setBackGround()
+    private async showLeaves()
     {
-        const leaf1 = new PIXI.Sprite(this.app.loader.resources.leaf1.texture);
+        const leaf1 = new Leaf(this.app.loader.resources.leaf1.texture);
+        leaf1.y = this.app.screen.height * 1.1;
 
-        leaf1.scale.set(0.7);
-        leaf1.anchor.y = 1;
-        leaf1.y = this.app.screen.height * 1.25;
+        const leaf2 = new Leaf(this.app.loader.resources.leaf2.texture);
+        leaf2.x = this.app.screen.width * 1 / 8;
+        leaf2.y = this.app.screen.height * 1.1;
 
-        const leaf2 = new PIXI.Sprite(this.app.loader.resources.leaf2.texture);
+        const leaf3 = new Leaf(this.app.loader.resources.leaf3.texture);
+        leaf3.x = this.app.screen.width * 2 / 8;
+        leaf3.y = this.app.screen.height * 1.1;
 
-        leaf2.scale.set(0.7);
-        leaf2.x = 100;
-        leaf2.anchor.y = 1;
-        leaf2.y = this.app.screen.height * 1.25;
-        const leaf3 = new PIXI.Sprite(this.app.loader.resources.leaf3.texture);
+        const leaf4 = new Leaf(this.app.loader.resources.leaf4.texture);
+        leaf4.x = this.app.screen.width * 3 / 8;
+        leaf4.y = this.app.screen.height * 1.05;
 
-        leaf3.scale.set(0.7);
-        leaf3.x = 200;
-        leaf3.anchor.y = 1;
-        leaf3.y = this.app.screen.height * 1.25;
-        const leaf4 = new PIXI.Sprite(this.app.loader.resources.leaf4.texture);
+        const leaf5 = new Leaf(this.app.loader.resources.leaf5.texture);
+        leaf5.x = this.app.screen.width * 4 / 8;
+        leaf5.y = this.app.screen.height * 1.05;
 
-        leaf4.x = 300;
-        leaf4.anchor.y = 1;
-        leaf4.y = this.app.screen.height * 1.25;
-        const leaf5 = new PIXI.Sprite(this.app.loader.resources.leaf5.texture);
+        const leaf6 = new Leaf(this.app.loader.resources.leaf6.texture);
+        leaf6.x = this.app.screen.width * 5 / 8;
+        leaf6.y = this.app.screen.height * 1.05;
 
-        leaf5.x = 400;
-        leaf5.anchor.y = 1;
-        leaf5.y = this.app.screen.height * 1.25;
-        const leaf6 = new PIXI.Sprite(this.app.loader.resources.leaf6.texture);
-
-        leaf6.x = 500;
-        leaf6.anchor.y = 1;
-        leaf6.y = this.app.screen.height * 1.25;
+        const leaf7 = new Leaf(this.app.loader.resources.leaf7.texture);
+        leaf7.x = this.app.screen.width * 6 / 8;
+        leaf7.y = this.app.screen.height * 1.1;
 
         this.BACKGROUND_CONTAINER.addChild(leaf1);
+        this.BACKGROUND_CONTAINER.addChild(leaf7);
         this.BACKGROUND_CONTAINER.addChild(leaf2);
-        this.BACKGROUND_CONTAINER.addChild(leaf3);
-        this.BACKGROUND_CONTAINER.addChild(leaf4);
-        this.BACKGROUND_CONTAINER.addChild(leaf5);
         this.BACKGROUND_CONTAINER.addChild(leaf6);
+        this.BACKGROUND_CONTAINER.addChild(leaf3);
+        this.BACKGROUND_CONTAINER.addChild(leaf5);
+        this.BACKGROUND_CONTAINER.addChild(leaf4);
+
+        await Promise.all([
+            setTimeout(() => {leaf1.bound(true) }, 100),
+            setTimeout(() => { leaf2.bound(false) }, 300),
+            setTimeout(() => { leaf3.bound(true) }, 200),
+            setTimeout(() => { leaf4.bound(false) }, 500),
+            setTimeout(() => { leaf5.bound(false) }, 400),
+            setTimeout(() => { leaf6.bound(true) }, 100),
+            setTimeout(() => { leaf7.bound(false) }, 200),
+        ]);
+
+    }
+
+    private async removeMenuStage(){
+        return new Promise<boolean>(async (resolve) =>{
+            this.BACKGROUND_CONTAINER.removeChildren();
+            this.GAME_CONTAINER.removeChildren();
+            setTimeout(() => { resolve(false); }, 1000);
+        });
     }
 
     protected loop(points: number[]): void

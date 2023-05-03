@@ -167,19 +167,28 @@ export class GameStage extends Stage
 
         const topMsg =  new Message(gameResult ? `level ${this.level} clear!!` : 'game over', 30);
         const conditionMsg = new Message(`I need ${this.clearCondition} butterflies.`, 20);
-        const countMsg = new Message(`You caught ${this.capturedCount} butterflies.`, 20);
+        const countMsg = new Message(`You got ${this.capturedCount} butterflies.`, 20);
         const lineMsg = new Message('----', 30);
         const baseScoreMsg = new Message(`base score : ${this.score}`, 20);
         const bonusMsg = new Message(`bonus score : ${bonusCount} × 100 = ${bonusCount * 100}`, 20);
         const totalScoreMsg = new Message(`total score : ${totalScore}`, 30);
 
-        const msgs = [topMsg, conditionMsg, countMsg, lineMsg, baseScoreMsg, bonusMsg, totalScoreMsg];
+        const top_msgs = [topMsg, conditionMsg, countMsg, lineMsg];
+        const result_msgs = [baseScoreMsg, bonusMsg, totalScoreMsg];
 
-        msgs.forEach((msg, index) =>
+        top_msgs.forEach((msg, index) =>
         {
             this.MESSAGE_CONTAINER.addChild(msg);
             msg.x = this.app.screen.width * 0.5;
             msg.y = 100 + (this.app.screen.height * 0.1 * index);
+            msg.show(false, 30);
+        });
+
+        result_msgs.forEach((msg, index) =>
+        {
+            this.MESSAGE_CONTAINER.addChild(msg);
+            msg.x = this.app.screen.width * 0.5;
+            msg.y = 100 + (this.app.screen.height * 0.1 * (index + top_msgs.length));
             if (msg === lineMsg)
             {
                 msg.show(false, 30);
@@ -189,7 +198,7 @@ export class GameStage extends Stage
                 setTimeout(() =>
                 {
                     msg.show(false, 30);
-                }, 300 * index);
+                }, 500 * (index + 1));
             }
         });
     }
@@ -227,7 +236,6 @@ export class GameStage extends Stage
 
     finish()
     {
-        console.log('finish');
         const butterflies = <Butterfly[]> this.GAME_CONTAINER.children;
 
         for (const butterfly of butterflies)
@@ -237,7 +245,6 @@ export class GameStage extends Stage
         // this.scoreProgress.delete(); TODO deleteできえない tickerが破壊された？
         this.scoreProgress.visible = false;
         this.isFinish = true;
-        console.log('ゲーム終了！');
     }
 
     private async play()
@@ -273,7 +280,7 @@ export class GameStage extends Stage
                 {
                     this.finish();
                     ticker.destroy();
-                    await this.dispMessage('\n\nおわり！');
+                    await this.dispMessage('\n\nGame Clear!');
                     setTimeout(() => { resolve(true); }, 500);
                 }
 

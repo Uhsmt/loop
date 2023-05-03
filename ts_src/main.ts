@@ -63,6 +63,7 @@ window.addEventListener('load', () =>
         { name: 'leaf4', url: './images/leaf4.png' },
         { name: 'leaf5', url: './images/leaf5.png' },
         { name: 'leaf6', url: './images/leaf6.png' },
+        { name: 'leaf7', url: './images/leaf7.png' },
         { name: 'sticky', url: './images/sticky.png' }
     ]).load(() =>
     {

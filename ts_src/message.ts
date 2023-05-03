@@ -24,8 +24,6 @@ export class Message extends PIXI.Text
         });
         this.anchor.set(0.5);
         this.alpha = 0;
-
-        // console.log(`${this.message}:${this.isJapanese()}:${this.style.fontFamily}`);
     }
     async show(autohide:boolean, keepFrame:number)
     {

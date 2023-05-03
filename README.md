@@ -29,10 +29,12 @@ static check :
 
 ## TODO
 ### phase 1
-- [ ] stage start画面
-- [ ] stage score画面
-- [ ] stage のpromise・async化
+- [ ] stage start画面 animation
+- [x] stage score画面
+- [ ] stage2~3
 - [ ] menu_stage animation
+- [ ] game over
+- [ ] game finish
 - [ ] soundセット
 - [ ] 猫ちゃんスプライトを作る
  - [ ]ノーマル
