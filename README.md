@@ -28,6 +28,9 @@ static check :
 
 
 ## TODO
+### refactor for latest pixijs.ver
+- [ ] tickerを調整 framerateではなく秒数指定にする
+
 ### phase 1
 - [ ] stage start画面 animation
 - [x] stage score画面
